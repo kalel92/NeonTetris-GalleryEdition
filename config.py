@@ -211,15 +211,47 @@ def load_controls():
         try:
             with open("controls.json", "r") as f:
                 loaded = json.load(f)
-                # Asegurar que los valores sean enteros (constantes de pygame)
                 for k, v in loaded.items():
                     if k in KEY_MAP:
                         KEY_MAP[k] = int(v)
         except Exception as e:
             print(f"Error loading controls: {e}")
 
-# Cargar controles al iniciar
+# Variables de estado persistentes
+current_volume = 0.5
+muted = False
+
+def save_settings():
+    """Guarda preferencias de usuario."""
+    settings = {
+        "lang": current_lang,
+        "theme": active_theme_name,
+        "volume": current_volume,
+        "muted": muted
+    }
+    try:
+        with open("settings.json", "w") as f:
+            json.dump(settings, f)
+    except: pass
+
+def load_settings():
+    """Carga preferencias de usuario."""
+    global current_lang, active_theme, active_theme_name, current_volume, muted
+    if os.path.exists("settings.json"):
+        try:
+            with open("settings.json", "r") as f:
+                s = json.load(f)
+                current_lang = s.get("lang", 0)
+                active_theme_name = s.get("theme", "CLASSIC")
+                active_theme = THEMES.get(active_theme_name, THEMES["CLASSIC"])
+                current_volume = s.get("volume", 0.5)
+                muted = s.get("muted", False)
+        except: pass
+
+# Cargar todo al iniciar
 load_controls()
+load_settings()
+
 
 
 # --- SISTEMA DE TRADUCCIÓN (i18n) ---

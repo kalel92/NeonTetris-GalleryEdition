@@ -419,8 +419,12 @@ def handle_save_flow(win, g):
 def main_menu():
     """Lógica del Menú Principal con botones de Carga y Galaga Style."""
     pygame.init()
+    # Icono de la aplicación
+    pygame.display.set_icon(renderer.get_app_icon())
+    
     # Iniciamos con ventana redimensionable
     win = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.RESIZABLE)
+
     pygame.display.set_caption("NEON TETRIS PRO - GALAGA EDITION")
 
     clock = pygame.time.Clock()
@@ -429,9 +433,14 @@ def main_menu():
     
     modes_keys = ["CLASSIC", "JOKER", "RANDOM", "ZEN", "CONTROLS", "LOAD", "EXIT"]
     theme_keys = list(config.THEMES.keys())
+    # Sincronizar theme_idx con la configuración cargada
+    theme_idx = theme_keys.index(config.active_theme_name) if config.active_theme_name in theme_keys else 0
 
-    cur_idx = 0; theme_idx = 0
-    volume = 0.5; muted = False; audio_engine.set_volume(volume)
+    cur_idx = 0
+    volume = config.current_volume
+    muted = config.muted
+    audio_engine.set_volume(0 if muted else volume)
+
     
     while True:
         win.fill((0, 0, 5)); starfield.draw(win)
@@ -506,18 +515,24 @@ def main_menu():
                 win = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE | (pygame.FULLSCREEN if is_fullscreen else 0))
 
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if lang_rect.collidepoint(event.pos):
+                    config.current_lang = (config.current_lang + 1) % len(config.LANGS)
+                    config.save_settings()
+                    continue
+                if theme_rect.collidepoint(event.pos):
+                    theme_idx = (theme_idx + 1) % len(theme_keys)
+                    config.active_theme = config.THEMES[theme_keys[theme_idx]]
+                    config.active_theme_name = theme_keys[theme_idx]
+                    config.save_settings()
+                    continue
+                
+                # Control de volumen por ratón
                 if audio_rect.collidepoint(event.pos):
                     if event.pos[0] > audio_rect.x + audio_rect.width - 40: muted = not muted
                     else:
                         rel_x = event.pos[0] - audio_rect.x
                         volume = max(0.0, min(1.0, rel_x / (audio_rect.width - 40))); muted = False
                     audio_engine.set_volume(0 if muted else volume)
-                
-                # Clic en Idioma
-                if lang_rect.collidepoint(event.pos):
-                    config.current_lang = (config.current_lang + 1) % len(config.LANGS)
-                
-                # Clic en Tema
                 if theme_rect.collidepoint(event.pos):
                     theme_idx = (theme_idx + 1) % len(theme_keys)
                 
@@ -602,10 +617,12 @@ def main_menu():
                                         if ce.key == pygame.K_RETURN: waiting = True
                                         if ce.key == pygame.K_ESCAPE: editing = False
                             clock.tick(60)
-                        continue # Vuelve al menú principal
+                        continue # Vuelve al menú principal después de configurar controles
                     else:
-
+                        renderer.fade_transition(win, win.get_width(), win.get_height())
                         g = Game(selected_mode_key)
+
+
 
                     # --- BUCLE DE JUEGO ---
                     is_paused = False
@@ -701,8 +718,10 @@ def main_menu():
                     high_scores = logic.load_scores()
                     if not high_scores or g.score > high_scores[-1]["score"] or len(high_scores) < 10:
                         name = renderer.ask_name(win)
-                        high_scores.append({"name": name, "score": g.score})
+                        high_scores.append({"name": name, "score": g.score, "mode": g.mode})
+                        high_scores.sort(key=lambda x: x["score"], reverse=True)
                         logic.save_scores(high_scores)
+
 
 if __name__ == "__main__":
     main_menu()

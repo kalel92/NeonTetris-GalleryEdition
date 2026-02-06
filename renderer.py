@@ -262,14 +262,16 @@ def draw_high_scores(surface, scores, y_offset=650):
     header = label_font.render(config._("TOP_HEROES"), 1, (255, 255, 0))
     surface.blit(header, (config.SCREEN_WIDTH // 2 - header.get_width() // 2, y_offset + int(10 * config.SCALE)))
     
-    # Mostrar solo los 5 mejores para que quepa en el diseño Galaga
     for i, entry in enumerate(scores[:5]):
-        name_text = score_font.render(f"{i+1}. {entry['name'][:10]}", 1, (255, 255, 255))
+        # Mostrar nombre y modo (abreviado si es necesario)
+        mode_label = entry.get("mode", "???")[:3].upper()
+        name_text = score_font.render(f"{i+1}. {entry['name'][:8]} [{mode_label}]", 1, (255, 255, 255))
         score_val = score_font.render(str(entry["score"]), 1, (0, 255, 255))
         
         y_y = y_offset + int(40 * config.SCALE) + i * int(22 * config.SCALE)
         surface.blit(name_text, (config.SCREEN_WIDTH // 2 - int(160 * config.SCALE), y_y))
         surface.blit(score_val, (config.SCREEN_WIDTH // 2 + int(60 * config.SCALE), y_y))
+
 
 
 def draw_settings_button(surface):
@@ -397,5 +399,25 @@ def ask_name(surface):
                     if len(name) < 10 and event.unicode.isalnum():
                         name += event.unicode.upper()
     return name if name else "JUGADOR"
+
+def fade_transition(surface, width, height, reverse=False):
+    """Crea un efecto de fundido a negro (o desde negro)."""
+    fade = pygame.Surface((width, height))
+    fade.fill((0,0,0))
+    for alpha in range(0, 255, 10):
+        fade.set_alpha(alpha if not reverse else 255 - alpha)
+        # No re-dibujamos todo, solo aplicamos el overlay sobre lo que ya hay
+        surface.blit(fade, (0,0))
+        pygame.display.update()
+        pygame.time.delay(10)
+
+def get_app_icon():
+    """Genera un icono de superficie neón para la ventana."""
+    icon = pygame.Surface((32, 32), pygame.SRCALPHA)
+    # Dibujar un bloque 'T' pequeño neón
+    c = (0, 255, 255)
+    pygame.draw.rect(icon, c, (10, 5, 12, 12), border_radius=2)
+    pygame.draw.rect(icon, c, (4, 17, 24, 12), border_radius=2)
+    return icon
 
 WHITE = (255, 255, 255)
