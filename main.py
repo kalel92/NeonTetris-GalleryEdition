@@ -92,8 +92,10 @@ class Game:
         
         # --- CÁLCULO DE DIFICULTAD ---
         self.level = 1 + (self.total_lines // 10)
+        audio_engine.set_level(self.level) # Ajustar BPM dinámico
         # La pieza cae 10% más rápido por cada nivel aumentado
         actual_speed = self.fall_speed * (0.9 ** (self.level - 1))
+
         if self.mode == "ZEN": actual_speed = 0.4 # Velocidad constante para relax
 
         # --- MANEJO DE DAS / ARR (Movimiento Continuo) ---
@@ -188,17 +190,26 @@ class Game:
 
     def move_piece(self, key):
         """Mueve la pieza y gestiona colisiones y lock delay."""
+        # Calcular pan basado en la posición X (relativo al centro)
+        pan = (self.current_piece.x - 4.5) / 5.0 
+
         if key == config.KEY_MAP["LEFT"]:
             self.current_piece.x -= 1
             if not logic.valid_space(self.current_piece, self.grid): self.current_piece.x += 1
-            else: self.reset_lock_delay()
+            else: 
+                self.reset_lock_delay()
+                audio_engine.play_sfx("move", pan=pan)
         elif key == config.KEY_MAP["RIGHT"]:
             self.current_piece.x += 1
             if not logic.valid_space(self.current_piece, self.grid): self.current_piece.x -= 1
-            else: self.reset_lock_delay()
+            else: 
+                self.reset_lock_delay()
+                audio_engine.play_sfx("move", pan=pan)
         elif key == config.KEY_MAP["DOWN"]:
             self.current_piece.y += 1
             if not logic.valid_space(self.current_piece, self.grid): self.current_piece.y -= 1
+            else: audio_engine.play_sfx("move", pan=pan)
+
 
 
     def get_bag_shape(self):
@@ -272,8 +283,12 @@ class Game:
                 
                 if not found:
                     self.current_piece.rotation = old_rot
+                else:
+                    audio_engine.play_sfx("rotate")
             else:
                 self.reset_lock_delay()
+                audio_engine.play_sfx("rotate")
+
 
     def hard_drop(self):
         """Envía la pieza directamente al fondo y activa sacudida de pantalla."""
@@ -281,7 +296,9 @@ class Game:
             self.current_piece.y += 1
         self.current_piece.y -= 1
         self.change_piece = True
+        audio_engine.play_sfx("drop")
         renderer.set_screen_shake(5, 4) # Sacudida pequeña por impacto
+
 
     def clear_lines(self):
         """Escanea, elimina líneas llenas y recalcula gravedad y puntuación."""
@@ -294,9 +311,11 @@ class Game:
         
         if lines_to_clear:
             renderer.set_screen_shake(10, 8) # Sacudida fuerte por limpieza de líneas
+            audio_engine.play_sfx("clear")
             num_lines = len(lines_to_clear)
             self.total_lines += num_lines
             self.combo += 1
+
             
             # --- SISTEMA DE PUNTUACIÓN PROFESIONAL ---
             points_base = [0, 100, 300, 500, 800][min(num_lines, 4)]
@@ -618,19 +637,27 @@ def main_menu():
                                 # Botón de Ajustes (Pausa)
                                 if not is_paused and g.settings_rect.collidepoint(game_event.pos):
                                     is_paused = True
+                                    audio_engine.paused = True
+
                                 
                                 # Clics en el Menú de Pausa
                                 elif is_paused:
                                     for i, r in enumerate(pause_option_rects):
                                         if r.collidepoint(game_event.pos):
-                                            if i == 0: is_paused = False
+                                            if i == 0: 
+                                                is_paused = False
+                                                audio_engine.paused = False
                                             elif i == 1: handle_save_flow(win, g)
+
                                             elif i == 2: g.run = False
                             
                             if game_event.type == pygame.KEYDOWN:
                                 if game_event.key == pygame.K_F11:
                                     win = toggle_fullscreen(win)
-                                if game_event.key == config.KEY_MAP["PAUSE"]: is_paused = not is_paused
+                                if game_event.key == config.KEY_MAP["PAUSE"]: 
+                                    is_paused = not is_paused
+                                    audio_engine.paused = is_paused
+
 
                                 if not is_paused:
                                     if game_event.key == config.KEY_MAP["ROTATE"]: g.rotate_piece()
@@ -642,8 +669,11 @@ def main_menu():
                                     if game_event.key == pygame.K_UP: pause_idx = (pause_idx - 1) % 3
                                     if game_event.key == pygame.K_DOWN: pause_idx = (pause_idx + 1) % 3
                                     if game_event.key == pygame.K_RETURN:
-                                        if pause_idx == 0: is_paused = False
+                                        if pause_idx == 0: 
+                                            is_paused = False
+                                            audio_engine.paused = False
                                         elif pause_idx == 1: handle_save_flow(win, g)
+
                                         elif pause_idx == 2: g.run = False
 
                         # 3. Lógica Post-Eventos
