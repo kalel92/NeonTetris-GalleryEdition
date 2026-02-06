@@ -19,7 +19,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,wav,mp3,ttf
 version = 1.0
 
 # (list) Application requirements
-requirements = python3==3.10.12,pygame
+requirements = python3,pygame
 
 # (str) Custom source folders for requirements
 # packagelist.pygame = pygame
@@ -40,7 +40,7 @@ android.permissions = INTERNET, WAKE_LOCK
 android.api = 33
 
 # (int) Minimum API your APK will support
-android.minapi = 21
+android.minapi = 24
 
 # (str) Android NDK version to use
 android.ndk = 25b
@@ -77,11 +77,11 @@ android.entrypoint = main.py
 # (list) Android materials themes (best for newer android versions)
 android.meta_data = android.max_aspect=2.1
 
-# (list) Android additionnal libraries to copy into libs/armeabi
-#android.add_libs_armeabi = libs/android-v7/libgnustl_shared.so
+# (list) architectures to build for (e.g. armeabi-v7a, arm64-v8a, x86, x86_64)
+android.archs = arm64-v8a
 
 # (str) python-for-android branch to use, default is master
-p4a.branch = master
+p4a.branch = develop
 
 # (str) OUUTPUT format (apk or aab)
 android.release_artifact = apk
