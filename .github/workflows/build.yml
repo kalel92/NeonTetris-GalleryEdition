@@ -14,10 +14,10 @@ jobs:
         os: [windows-latest, ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
@@ -28,14 +28,15 @@ jobs:
 
     - name: Build with PyInstaller (Windows)
       if: matrix.os == 'windows-latest'
-      run: pyinstaller --onefile --windowed --name "NeonTetrisPro_Win" main.py
+      run: python -m PyInstaller --onefile --windowed --name "NeonTetrisPro_Win" main.py
 
     - name: Build with PyInstaller (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: pyinstaller --onefile --windowed --name "NeonTetrisPro_Linux" main.py
+      run: python -m PyInstaller --onefile --windowed --name "NeonTetrisPro_Linux" main.py
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: NeonTetrisPro-${{ matrix.os }}
         path: dist/NeonTetrisPro_*
+
