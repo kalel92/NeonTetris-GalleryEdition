@@ -19,7 +19,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,wav,mp3,ttf
 version = 1.0
 
 # (list) Application requirements
-requirements = python3,pygame
+requirements = python3,pygame,sdl2_image,sdl2_mixer,sdl2_ttf
 
 # (str) Custom source folders for requirements
 # packagelist.pygame = pygame
@@ -81,21 +81,21 @@ android.meta_data = android.max_aspect=2.1
 android.archs = arm64-v8a
 
 # (str) python-for-android branch to use, default is master
-p4a.branch = develop
+p4a.branch = master
 
 # (str) OUUTPUT format (apk or aab)
 android.release_artifact = apk
 
-# (str) Log level (1 = info, 2 = error only, 0 = debug)
-log_level = 1
+# (str) Log level (2 = debug, 1 = info, 0 = error only)
+log_level = 2
 
 # (int) display cutouts (notch)
 android.notch_support = True
 
 [buildozer]
 
-# (int) log level (1 = info, 2 = error only, 0 = debug)
-log_level = 1
+# (int) log level (2 = debug, 1 = info, 0 = error only)
+log_level = 2
 
 # (int) display warning if buildozer is run as root (0 = off, 1 = on)
 warn_on_root = 1
