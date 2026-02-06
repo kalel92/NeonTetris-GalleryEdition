@@ -86,16 +86,16 @@ p4a.branch = master
 # (str) OUUTPUT format (apk or aab)
 android.release_artifact = apk
 
-# (str) Log level (2 = error only, 1 = info, 0 = debug)
-log_level = 2
+# (str) Log level (1 = info, 2 = error only, 0 = debug)
+log_level = 1
 
 # (int) display cutouts (notch)
 android.notch_support = True
 
 [buildozer]
 
-# (int) log level (2 = error only, 1 = info, 0 = debug)
-log_level = 2
+# (int) log level (1 = info, 2 = error only, 0 = debug)
+log_level = 1
 
 # (int) display warning if buildozer is run as root (0 = off, 1 = on)
 warn_on_root = 1
