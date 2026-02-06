@@ -290,19 +290,23 @@ def draw_settings_button(surface):
     return pygame.Rect(x, y, 30, 30)
 
 def draw_pause_menu(surface, selected_idx):
-    """Dibuja el overlay del menú de pausa."""
+    """Dibuja el overlay del menú de pausa con soporte para ratón."""
     # Fondo semi-transparente
     overlay = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 180))
     surface.blit(overlay, (0, 0))
     
-    draw_text_centered(surface, config._("PAUSED"), 60, 200, (255, 255, 0))
+    draw_text_centered(surface, config._("PAUSED"), 60, int(200 * config.SCALE), (255, 255, 0))
     
     options = [config._("CONTINUE"), config._("SAVE"), config._("MENU")]
+    option_rects = []
     for i, opt in enumerate(options):
         color = (255, 255, 255) if i == selected_idx else (100, 100, 150)
         prefix = "> " if i == selected_idx else "  "
-        draw_text_centered(surface, f"{prefix}{opt}", 35, 350 + i*60, color)
+        r = draw_text_centered(surface, f"{prefix}{opt}", 35, int((350 + i*60) * config.SCALE), color)
+        option_rects.append(r)
+    return option_rects
+
 
 def draw_load_menu(surface, save_info, selected_idx):
     """Dibuja la pantalla de selección de slots para cargar."""

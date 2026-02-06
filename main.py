@@ -590,10 +590,24 @@ def main_menu():
                         if not is_paused:
                             g.update(clock)
                         
+                        # 1. Dibujo y Obtención de Rects
+                        g.settings_rect = g.draw(win)
+                        pause_option_rects = []
+                        if is_paused: 
+                            pause_option_rects = renderer.draw_pause_menu(win, pause_idx)
+                        audio_rect = renderer.draw_audio_control(win, volume, muted)
+                        
+                        # 2. Manejo de Eventos Consolidado
                         for game_event in pygame.event.get():
                             if game_event.type == pygame.QUIT: pygame.quit(); sys.exit()
                             
+                            # Redimensionamiento dinámico
+                            if game_event.type == pygame.VIDEORESIZE:
+                                config.update_resolution(game_event.w, game_event.h)
+                                win = pygame.display.set_mode((game_event.w, game_event.h), pygame.RESIZABLE | (pygame.FULLSCREEN if is_fullscreen else 0))
+
                             if game_event.type == pygame.MOUSEBUTTONDOWN:
+                                # Control de Audio
                                 if audio_rect.collidepoint(game_event.pos):
                                     if game_event.pos[0] > audio_rect.x + audio_rect.width - 40: muted = not muted
                                     else:
@@ -601,8 +615,17 @@ def main_menu():
                                         volume = max(0.0, min(1.0, rel_x / (audio_rect.width - 40))); muted = False
                                     audio_engine.set_volume(0 if muted else volume)
                                 
+                                # Botón de Ajustes (Pausa)
                                 if not is_paused and g.settings_rect.collidepoint(game_event.pos):
                                     is_paused = True
+                                
+                                # Clics en el Menú de Pausa
+                                elif is_paused:
+                                    for i, r in enumerate(pause_option_rects):
+                                        if r.collidepoint(game_event.pos):
+                                            if i == 0: is_paused = False
+                                            elif i == 1: handle_save_flow(win, g)
+                                            elif i == 2: g.run = False
                             
                             if game_event.type == pygame.KEYDOWN:
                                 if game_event.key == pygame.K_F11:
@@ -615,7 +638,7 @@ def main_menu():
                                     elif game_event.key == config.KEY_MAP["HOLD"]: g.handle_hold()
 
                                 else:
-                                    # Navegación Menú Pausa
+                                    # Navegación Teclado Menú Pausa
                                     if game_event.key == pygame.K_UP: pause_idx = (pause_idx - 1) % 3
                                     if game_event.key == pygame.K_DOWN: pause_idx = (pause_idx + 1) % 3
                                     if game_event.key == pygame.K_RETURN:
@@ -623,21 +646,15 @@ def main_menu():
                                         elif pause_idx == 1: handle_save_flow(win, g)
                                         elif pause_idx == 2: g.run = False
 
+                        # 3. Lógica Post-Eventos
                         if not is_paused and g.change_piece:
                             for x, y in logic.convert_shape_format(g.current_piece): g.locked_positions[(x, y)] = g.current_piece.color
                             g.clear_lines(); g.current_piece = g.next_pieces.pop(0); g.next_pieces.append(g.get_bag_shape())
                             g.change_piece = False; g.can_hold = True
                             if logic.check_lost(g.locked_positions): g.run = False
                         
-                        g.settings_rect = g.draw(win)
-                        if is_paused: renderer.draw_pause_menu(win, pause_idx)
-                        renderer.draw_audio_control(win, volume, muted)
-                        pygame.display.update(); clock.tick(60)
-
-                        # --- MANEJO DE RESIZE EN JUEGO ---
-                        for resize_event in pygame.event.get(pygame.VIDEORESIZE):
-                            config.update_resolution(resize_event.w, resize_event.h)
-                            win = pygame.display.set_mode((resize_event.w, resize_event.h), pygame.RESIZABLE | (pygame.FULLSCREEN if is_fullscreen else 0))
+                        pygame.display.update()
+                        clock.tick(60)
 
 
                     # --- FIN DE PARTIDA / GAME OVER ---
