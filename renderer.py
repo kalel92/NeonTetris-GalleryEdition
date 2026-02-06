@@ -34,12 +34,15 @@ def get_shake_offsets():
 
 def draw_text_centered(surface, text, size, y_pos, color, font_name="consolas", glow=False):
     """Dibuja texto centrado horizontalmente con efectos de sombra y resplandor."""
-    font = pygame.font.SysFont(font_name, size, bold=True)
+    scaled_size = int(size * config.SCALE)
+    font = pygame.font.SysFont(font_name, scaled_size, bold=True)
+
     
     # Sombra profunda para mayor legibilidad
     shadow = font.render(text, 1, (10, 10, 20))
     x_pos = config.SCREEN_WIDTH // 2 - shadow.get_width() // 2
-    surface.blit(shadow, (x_pos + 4, y_pos + 4))
+    surface.blit(shadow, (x_pos + max(1, int(4 * config.SCALE)), y_pos + max(1, int(4 * config.SCALE))))
+
     
     label = font.render(text, 1, color)
     if glow:
@@ -48,6 +51,8 @@ def draw_text_centered(surface, text, size, y_pos, color, font_name="consolas", 
             surface.blit(font.render(text, 1, color), (x_pos + ox, y_pos + oy))
     
     surface.blit(label, (x_pos, y_pos))
+    return pygame.Rect(x_pos, y_pos, label.get_width(), label.get_height())
+
 
 def draw_arcade_overlay(surface):
     """Añade un efecto de scanlines (CRT) y un ligero viñeteado para estética arcade."""
@@ -59,8 +64,9 @@ def draw_arcade_overlay(surface):
     
     # Efecto viñeta (bordes oscuros)
     vignette = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.SRCALPHA)
-    pygame.draw.rect(vignette, (0, 0, 0, 30), vignette.get_rect(), 100, border_radius=150)
+    pygame.draw.rect(vignette, (0, 0, 0, 30), vignette.get_rect(), int(100 * config.SCALE), border_radius=int(150 * config.SCALE))
     surface.blit(vignette, (0, 0))
+
 
 def draw_block(surface, x, y, color, is_ghost=False, is_joker=False, shake=(0,0)):
     """Renderiza un bloque individual con estilo 3D extrudido.
@@ -98,8 +104,9 @@ def draw_block(surface, x, y, color, is_ghost=False, is_joker=False, shake=(0,0)
     
     # Sombra proyectada muy suave
     s = pygame.Surface((config.BLOCK_SIZE, config.BLOCK_SIZE), pygame.SRCALPHA)
-    pygame.draw.rect(s, (0, 0, 0, 40), (0, 0, config.BLOCK_SIZE, config.BLOCK_SIZE), border_radius=4)
-    surface.blit(s, (rect[0]+3, rect[1]+3))
+    pygame.draw.rect(s, (0, 0, 0, 40), (0, 0, config.BLOCK_SIZE, config.BLOCK_SIZE), border_radius=int(4 * config.SCALE))
+    surface.blit(s, (rect[0]+int(3*config.SCALE), rect[1]+int(3*config.SCALE)))
+
 
     # Caras del cubo
     pygame.draw.polygon(surface, mid_color, [(rect[0]+config.BLOCK_SIZE, rect[1]), (rect[0]+config.BLOCK_SIZE, rect[1]+config.BLOCK_SIZE), (rect[0]+config.BLOCK_SIZE-padding, rect[1]+config.BLOCK_SIZE-padding), (rect[0]+config.BLOCK_SIZE-padding, rect[1]+padding)])
@@ -108,11 +115,13 @@ def draw_block(surface, x, y, color, is_ghost=False, is_joker=False, shake=(0,0)
     pygame.draw.polygon(surface, mid_color, [(rect[0], rect[1]), (rect[0], rect[1]+config.BLOCK_SIZE), (rect[0]+padding, rect[1]+config.BLOCK_SIZE-padding), (rect[0]+padding, rect[1]+padding)])
 
     # Cara frontal
-    pygame.draw.rect(surface, color, (rect[0]+padding, rect[1]+padding, config.BLOCK_SIZE-padding*2, config.BLOCK_SIZE-padding*2), border_radius=1)
+    pygame.draw.rect(surface, color, (rect[0]+padding, rect[1]+padding, config.BLOCK_SIZE-padding*2, config.BLOCK_SIZE-padding*2), border_radius=max(1, int(1 * config.SCALE)))
+
 
 def draw_audio_control(surface, volume, muted):
     """Dibuja el icono de volumen interactivo y la barra de nivel."""
-    x, y = 880, 20
+    x, y = config.SCREEN_WIDTH - 70, 20
+
     color = (0, 255, 255) if not muted else (255, 50, 50)
     
     # Dibujar Icono de Altavoz Simplificado
@@ -142,10 +151,12 @@ def draw_grid(surface, shake=(0,0)):
     
     # 2. Bordes del área de juego (Doble borde neón)
     # Dibujamos el primer borde 2px hacia AFUERA para que las fichas no se sobrepongan
-    border_rect = (play_area_rect[0] - 2, play_area_rect[1] - 2, play_area_rect[2] + 4, play_area_rect[3] + 4)
-    pygame.draw.rect(surface, config.active_theme["glow1"], border_rect, 2, border_radius=2)
+    border_thickness = max(1, int(2 * config.SCALE))
+    border_rect = (play_area_rect[0] - border_thickness, play_area_rect[1] - border_thickness, play_area_rect[2] + border_thickness*2, play_area_rect[3] + border_thickness*2)
+    pygame.draw.rect(surface, config.active_theme["glow1"], border_rect, border_thickness, border_radius=border_thickness)
     # Segundo borde decorativo un poco más alejado
-    pygame.draw.rect(surface, config.active_theme["glow2"], (border_rect[0]-4, border_rect[1]-4, border_rect[2]+8, border_rect[3]+8), 1, border_radius=4)
+    pygame.draw.rect(surface, config.active_theme["glow2"], (border_rect[0]-4, border_rect[1]-4, border_rect[2]+8, border_rect[3]+8), 1, border_radius=int(4 * config.SCALE))
+
     
     # 3. Cuadrícula interna
     grid_color = (30, 30, 60)
@@ -161,10 +172,11 @@ def draw_next_pieces(surface, next_pieces, shake=(0,0)):
     panel_x = config.TOP_LEFT_X + config.PLAY_WIDTH + 50
     panel_y = config.TOP_LEFT_Y
     
-    pygame.draw.rect(surface, (10, 10, 30), (panel_x, panel_y, 150, 250), 0, border_radius=10)
-    pygame.draw.rect(surface, config.active_theme["glow1"], (panel_x, panel_y, 150, 250), 2, border_radius=10)
+    pygame.draw.rect(surface, (10, 10, 30), (panel_x, panel_y, int(150 * config.SCALE), int(250 * config.SCALE)), 0, border_radius=int(10 * config.SCALE))
+    pygame.draw.rect(surface, config.active_theme["glow1"], (panel_x, panel_y, int(150 * config.SCALE), int(250 * config.SCALE)), max(1, int(2 * config.SCALE)), border_radius=int(10 * config.SCALE))
     
-    font = pygame.font.SysFont("consolas", 20, bold=True)
+    font = pygame.font.SysFont("consolas", int(20 * config.SCALE), bold=True)
+
     label = font.render(config._("NEXT"), 1, WHITE)
     surface.blit(label, (panel_x + 15, panel_y + 10))
     
@@ -183,10 +195,11 @@ def draw_hold_piece(surface, hold_piece, shake=(0,0)):
     panel_x = config.TOP_LEFT_X - 180
     panel_y = config.TOP_LEFT_Y
     
-    pygame.draw.rect(surface, (10, 10, 30), (panel_x, panel_y, 150, 150), 0, border_radius=10)
-    pygame.draw.rect(surface, config.active_theme["glow2"], (panel_x, panel_y, 150, 150), 2, border_radius=10)
+    pygame.draw.rect(surface, (10, 10, 30), (panel_x, panel_y, int(150 * config.SCALE), int(150 * config.SCALE)), 0, border_radius=int(10 * config.SCALE))
+    pygame.draw.rect(surface, config.active_theme["glow2"], (panel_x, panel_y, int(150 * config.SCALE), int(150 * config.SCALE)), max(1, int(2 * config.SCALE)), border_radius=int(10 * config.SCALE))
     
-    font = pygame.font.SysFont("consolas", 20, bold=True)
+    font = pygame.font.SysFont("consolas", int(20 * config.SCALE), bold=True)
+
     label = font.render(config._("HOLD"), 1, WHITE)
     surface.blit(label, (panel_x + 25, panel_y + 10))
     
@@ -255,11 +268,13 @@ def draw_high_scores(surface, scores, y_offset=650):
 
 def draw_settings_button(surface):
     """Dibuja un botón de engrane en la parte inferior derecha."""
-    x, y = 880, 780
+    x, y = config.SCREEN_WIDTH - 70, config.SCREEN_HEIGHT - 70
+
     color = (200, 200, 200)
     # Cuerpo del engrane
-    pygame.draw.circle(surface, color, (x+15, y+15), 10)
-    pygame.draw.circle(surface, (30,30,30), (x+15, y+15), 4) # Hueco central
+    pygame.draw.circle(surface, color, (x+int(15*config.SCALE), y+int(15*config.SCALE)), int(10*config.SCALE))
+    pygame.draw.circle(surface, (30,30,30), (x+int(15*config.SCALE), y+int(15*config.SCALE)), int(4*config.SCALE)) # Hueco central
+
     # Dientes
     for i in range(8):
         angle = i * (math.pi / 4)
@@ -304,6 +319,40 @@ def draw_load_menu(surface, save_info, selected_idx):
         
         if i == selected_idx:
             draw_text_centered(surface, config._("PRESS_ENTER_LOAD"), 15, box_y + 85, (255, 255, 0))
+
+def draw_controls_menu(surface, selected_idx, waiting_for_key=False):
+    """Interfaz para remapear las teclas de control."""
+    surface.fill((5, 5, 25))
+    draw_text_centered(surface, config._("CONTROLS"), 50, 60, (255, 255, 0))
+    
+    keys_to_show = ["LEFT", "RIGHT", "DOWN", "ROTATE", "DROP", "HOLD", "PAUSE"]
+    for i, key_name in enumerate(keys_to_show):
+        color = (255, 255, 255) if i == selected_idx else (100, 100, 150)
+        y_y = 180 + i * 55
+        
+        # Nombre de la acción
+        action_label = config._(f"KEY_{key_name}")
+        font = pygame.font.SysFont("consolas", 25, bold=True)
+        surface.blit(font.render(action_label, 1, color), (200, y_y))
+        
+        # Tecla asignada actualmente
+        key_code = config.KEY_MAP[key_name]
+        key_text = pygame.key.name(key_code).upper()
+        
+        if i == selected_idx and waiting_for_key:
+            key_text = config._("PRESS_KEY")
+            val_color = (255, 50, 50)
+        else:
+            val_color = (0, 255, 255)
+            
+        val_surf = font.render(key_text, 1, val_color)
+        surface.blit(val_surf, (config.SCREEN_WIDTH - 200 - val_surf.get_width(), y_y))
+        
+        # Decoración de línea
+        pygame.draw.line(surface, (40, 40, 80), (200, y_y + 35), (config.SCREEN_WIDTH - 200, y_y + 35), 1)
+
+    draw_text_centered(surface, config._("MENU"), 20, config.SCREEN_HEIGHT - 80, (150, 150, 150))
+
 
 def draw_game_over(surface, score):
     """Dibuja la pantalla de fin de juego con el puntaje final."""

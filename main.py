@@ -13,7 +13,25 @@ import renderer
 import models
 from audio import audio_engine
 
+
+# Variables globales para el manejo de la ventana en Desktop
+is_fullscreen = False
+
+def toggle_fullscreen(surface):
+    """Alterna entre modo ventana y pantalla completa."""
+    global is_fullscreen
+    is_fullscreen = not is_fullscreen
+    if is_fullscreen:
+        new_surface = pygame.display.set_mode((0, 0), pygame.FULLSCREEN | pygame.RESIZABLE)
+    else:
+        new_surface = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.RESIZABLE)
+    
+    # Actualizar config con las nuevas dimensiones reales
+    config.update_resolution(new_surface.get_width(), new_surface.get_height())
+    return new_surface
+
 class Game:
+
     """Clase maestra que controla una sesión de juego."""
 
     def __init__(self, mode="JOKER"):
@@ -53,9 +71,10 @@ class Game:
         self.lightnings = []        # Efectos de truenos activos
         
         # --- MECÁNICAS PROFESIONALES (Tetris Guideline) ---
-        self.key_timers = {pygame.K_LEFT: 0, pygame.K_RIGHT: 0, pygame.K_DOWN: 0}
+        self.key_timers = {config.KEY_MAP["LEFT"]: 0, config.KEY_MAP["RIGHT"]: 0, config.KEY_MAP["DOWN"]: 0}
         self.das_delay = 170  # ms antes de empezar a repetir
         self.arr_delay = 35   # ms entre cada paso de repetición
+
         self.back_to_back = False # Flag para bonus de Tetrises consecutivos
         self.last_raw_time = 0
 
@@ -79,8 +98,9 @@ class Game:
 
         # --- MANEJO DE DAS / ARR (Movimiento Continuo) ---
         keys = pygame.key.get_pressed()
-        for key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]:
+        for key in [config.KEY_MAP["LEFT"], config.KEY_MAP["RIGHT"], config.KEY_MAP["DOWN"]]:
             if keys[key]:
+
                 if self.key_timers[key] == 0:
                     # Primer movimiento instantáneo
                     self.move_piece(key)
@@ -146,35 +166,40 @@ class Game:
                 sys.exit()
             
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+                if event.key == config.KEY_MAP["LEFT"]:
                     self.current_piece.x -= 1
                     if not logic.valid_space(self.current_piece, self.grid): self.current_piece.x += 1
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == config.KEY_MAP["RIGHT"]:
                     self.current_piece.x += 1
                     if not logic.valid_space(self.current_piece, self.grid): self.current_piece.x -= 1
-                elif event.key == pygame.K_DOWN:
+                elif event.key == config.KEY_MAP["DOWN"]:
                     self.current_piece.y += 1
                     if not logic.valid_space(self.current_piece, self.grid): self.current_piece.y -= 1
-                elif event.key == pygame.K_UP:
+                elif event.key == config.KEY_MAP["ROTATE"]:
                     self.rotate_piece()
-                elif event.key == pygame.K_SPACE:
+                elif event.key == config.KEY_MAP["DROP"]:
                     self.hard_drop()
-                elif event.key == pygame.K_c or event.key == pygame.K_LSHIFT:
+                elif event.key == config.KEY_MAP["HOLD"]:
                     self.handle_hold()
+                elif event.key == config.KEY_MAP["FULLSCREEN"]:
+                    # Manejado en el bucle externo
+                    pass 
+
 
     def move_piece(self, key):
         """Mueve la pieza y gestiona colisiones y lock delay."""
-        if key == pygame.K_LEFT:
+        if key == config.KEY_MAP["LEFT"]:
             self.current_piece.x -= 1
             if not logic.valid_space(self.current_piece, self.grid): self.current_piece.x += 1
             else: self.reset_lock_delay()
-        elif key == pygame.K_RIGHT:
+        elif key == config.KEY_MAP["RIGHT"]:
             self.current_piece.x += 1
             if not logic.valid_space(self.current_piece, self.grid): self.current_piece.x -= 1
             else: self.reset_lock_delay()
-        elif key == pygame.K_DOWN:
+        elif key == config.KEY_MAP["DOWN"]:
             self.current_piece.y += 1
             if not logic.valid_space(self.current_piece, self.grid): self.current_piece.y -= 1
+
 
     def get_bag_shape(self):
         """Implementa el sistema 7-Bag: una bolsa con las 7 piezas clásicas que se baraja al vaciarse."""
@@ -352,7 +377,8 @@ def handle_save_flow(win, g):
     sel = 0
     while True:
         renderer.draw_load_menu(win, save_info, sel) # Reusamos la estética de carga
-        renderer.draw_text_centered(win, config._("SELECT_SAVE"), 30, 50, (255, 255, 0))
+        renderer.draw_text_centered(win, config._("SELECT_SAVE"), 30, int(50 * config.SCALE), (255, 255, 0))
+
         pygame.display.update()
         for e in pygame.event.get():
             if e.type == pygame.KEYDOWN:
@@ -374,14 +400,17 @@ def handle_save_flow(win, g):
 def main_menu():
     """Lógica del Menú Principal con botones de Carga y Galaga Style."""
     pygame.init()
-    win = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+    # Iniciamos con ventana redimensionable
+    win = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("NEON TETRIS PRO - GALAGA EDITION")
+
     clock = pygame.time.Clock()
     audio_engine.start()
     starfield = models.Starfield(150)
     
-    modes_keys = ["CLASSIC", "JOKER", "RANDOM", "ZEN", "LOAD", "EXIT"]
+    modes_keys = ["CLASSIC", "JOKER", "RANDOM", "ZEN", "CONTROLS", "LOAD", "EXIT"]
     theme_keys = list(config.THEMES.keys())
+
     cur_idx = 0; theme_idx = 0
     volume = 0.5; muted = False; audio_engine.set_volume(volume)
     
@@ -390,38 +419,51 @@ def main_menu():
         config.active_theme = config.THEMES[theme_keys[theme_idx]]; config.active_theme_name = theme_keys[theme_idx]
         ticks = pygame.time.get_ticks()
         title_color = (255, 255, 255) if (ticks // 500) % 2 == 0 else (255, 200, 0)
-        renderer.draw_text_centered(win, "NEON TETRIS", 100, 40, title_color, "arialblack", glow=True)
-        renderer.draw_text_centered(win, "GALLERY EDITION", 22, 145, (255, 50, 50), "consolas")
+        renderer.draw_text_centered(win, "NEON TETRIS", 100, int(40 * config.SCALE), title_color, "arialblack", glow=True)
+        renderer.draw_text_centered(win, "GALLERY EDITION", 22, int(145 * config.SCALE), (255, 50, 50), "consolas")
         audio_rect = renderer.draw_audio_control(win, volume, muted)
         
-        # Naves decorativas Galaga (Posiciones ajustadas)
+        # Naves decorativas Galaga (Posiciones ajustadas dinámicamente)
         ship_color = (255, 0, 0)
-        renderer.draw_block(win, 70, 60, ship_color); renderer.draw_block(win, 70, 90, ship_color)
-        renderer.draw_block(win, 40, 90, ship_color); renderer.draw_block(win, 100, 90, ship_color)
-        renderer.draw_block(win, 850, 60, (0, 255, 255)); renderer.draw_block(win, 850, 90, (0, 255, 255))
-        renderer.draw_block(win, 820, 90, (0, 255, 255)); renderer.draw_block(win, 880, 90, (0, 255, 255))
+        renderer.draw_block(win, int(70 * config.SCALE), int(60 * config.SCALE), ship_color)
+        renderer.draw_block(win, int(70 * config.SCALE), int(90 * config.SCALE), ship_color)
+        renderer.draw_block(win, int(40 * config.SCALE), int(90 * config.SCALE), ship_color)
+        renderer.draw_block(win, int(100 * config.SCALE), int(90 * config.SCALE), ship_color)
+        
+        c2x = config.SCREEN_WIDTH - int(100 * config.SCALE)
+        renderer.draw_block(win, c2x, int(60 * config.SCALE), (0, 255, 255))
+        renderer.draw_block(win, c2x, int(90 * config.SCALE), (0, 255, 255))
+        renderer.draw_block(win, c2x - int(30 * config.SCALE), int(90 * config.SCALE), (0, 255, 255))
+        renderer.draw_block(win, c2x + int(30 * config.SCALE), int(90 * config.SCALE), (0, 255, 255))
+
 
         # Selectores de Tema e Idioma (Más abajo para no chocar con el subtítulo)
-        renderer.draw_text_centered(win, f"< {config._('LANGUAGE')}: {config.LANGS[config.current_lang]} >", 20, 190, (255, 255, 0))
-        renderer.draw_text_centered(win, f"< {config._('THEME')}: {theme_keys[theme_idx]} >", 20, 215, (0, 255, 255))
+        lang_rect = renderer.draw_text_centered(win, f"< {config._('LANGUAGE')}: {config.LANGS[config.current_lang]} >", 20, int(190 * config.SCALE), (255, 255, 0))
+        theme_rect = renderer.draw_text_centered(win, f"< {config._('THEME')}: {theme_keys[theme_idx]} >", 20, int(215 * config.SCALE), (0, 255, 255))
         
         # Caja de Opciones (Más grande y centrada)
-        pygame.draw.rect(win, (255, 255, 255), (config.SCREEN_WIDTH//2 - 180, 250, 360, 360), 2, border_radius=5)
-        renderer.draw_text_centered(win, config._("SELECT_OPT"), 20, 270, (255, 255, 0))
+        pygame.draw.rect(win, (255, 255, 255), (config.SCREEN_WIDTH//2 - int(180 * config.SCALE), int(250 * config.SCALE), int(360 * config.SCALE), int(360 * config.SCALE)), 2, border_radius=int(5 * config.SCALE))
+        renderer.draw_text_centered(win, config._("SELECT_OPT"), 20, int(270 * config.SCALE), (255, 255, 0))
         
+        option_rects = []
         for i, m_key in enumerate(modes_keys):
             color = (255, 255, 255) if i == cur_idx else (80, 80, 160)
             prefix = " > " if i == cur_idx else "   "
             suffix = " < " if i == cur_idx else "   "
             if i == cur_idx and (ticks // 200) % 2 == 0: color = (255, 50, 50)
             opt_text = config._(m_key)
-            # Mayor espaciado vertical (i*50 en lugar de i*45) y centrado
-            renderer.draw_text_centered(win, f"{prefix}{opt_text}{suffix}", 32, 315 + i*48, color)
+            # Mayor espaciado vertical
+            r = renderer.draw_text_centered(win, f"{prefix}{opt_text}{suffix}", 32, int((315 + i*48) * config.SCALE), color)
+            option_rects.append(r)
+
+
         
-        if (ticks // 800) % 2 == 0: renderer.draw_text_centered(win, config._("PRESS_START"), 25, 625, (0, 255, 0))
-        renderer.draw_high_scores(win, logic.load_scores(), y_offset=670)
-        renderer.draw_text_centered(win, "CREDIT  01", 18, 810, (255, 255, 255))
-        renderer.draw_text_centered(win, "© 2026 ANTIGRAVITY ARCADE", 14, 830, (120, 120, 120))
+        if (ticks // 800) % 2 == 0: renderer.draw_text_centered(win, config._("PRESS_START"), 25, int(625 * config.SCALE), (0, 255, 0))
+        renderer.draw_high_scores(win, logic.load_scores(), y_offset=int(670 * config.SCALE))
+
+        renderer.draw_text_centered(win, "CREDIT  01", 18, config.SCREEN_HEIGHT - 40, (255, 255, 255))
+        renderer.draw_text_centered(win, "© 2026 ANTIGRAVITY ARCADE", 14, config.SCREEN_HEIGHT - 20, (120, 120, 120))
+
 
         # Filtro Arcade
         renderer.draw_arcade_overlay(win)
@@ -429,6 +471,10 @@ def main_menu():
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT: return
+            if event.type == pygame.VIDEORESIZE:
+                config.update_resolution(event.w, event.h)
+                win = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE | (pygame.FULLSCREEN if is_fullscreen else 0))
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if audio_rect.collidepoint(event.pos):
                     if event.pos[0] > audio_rect.x + audio_rect.width - 40: muted = not muted
@@ -436,11 +482,33 @@ def main_menu():
                         rel_x = event.pos[0] - audio_rect.x
                         volume = max(0.0, min(1.0, rel_x / (audio_rect.width - 40))); muted = False
                     audio_engine.set_volume(0 if muted else volume)
+                
+                # Clic en Idioma
+                if lang_rect.collidepoint(event.pos):
+                    config.current_lang = (config.current_lang + 1) % len(config.LANGS)
+                
+                # Clic en Tema
+                if theme_rect.collidepoint(event.pos):
+                    theme_idx = (theme_idx + 1) % len(theme_keys)
+                
+                # Clic en Opciones de Modo
+                for i, r in enumerate(option_rects):
+                    if r.collidepoint(event.pos):
+                        if i == cur_idx:
+                            # Lanzar el modo (simular tecla ENTER)
+                            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+                        else:
+                            cur_idx = i
+
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP: cur_idx = (cur_idx - 1) % len(modes_keys)
                 if event.key == pygame.K_DOWN: cur_idx = (cur_idx + 1) % len(modes_keys)
                 if event.key == pygame.K_LEFT: theme_idx = (theme_idx - 1) % len(theme_keys)
                 if event.key == pygame.K_RIGHT: theme_idx = (theme_idx + 1) % len(theme_keys)
+                if event.key == pygame.K_F11:
+                    win = toggle_fullscreen(win)
+
                 
                 # Nuevas teclas para idioma: A y S (o usar otra lógica)
                 if event.key == pygame.K_a: config.current_lang = (config.current_lang - 1) % len(config.LANGS)
@@ -480,7 +548,33 @@ def main_menu():
                                             loading = False
                             clock.tick(60)
                         if not g: continue # Si no cargó nada, vuelve al menú
+                    elif selected_mode_key == "CONTROLS":
+                        ctrl_sel = 0
+                        editing = True
+                        waiting = False
+                        keys_list = ["LEFT", "RIGHT", "DOWN", "ROTATE", "DROP", "HOLD", "PAUSE"]
+                        
+                        while editing:
+                            renderer.draw_controls_menu(win, ctrl_sel, waiting)
+                            pygame.display.update()
+                            
+                            for ce in pygame.event.get():
+                                if ce.type == pygame.QUIT: pygame.quit(); sys.exit()
+                                if ce.type == pygame.KEYDOWN:
+                                    if waiting:
+                                        # Asignar la nueva tecla
+                                        config.KEY_MAP[keys_list[ctrl_sel]] = ce.key
+                                        config.save_controls()
+                                        waiting = False
+                                    else:
+                                        if ce.key == pygame.K_UP: ctrl_sel = (ctrl_sel - 1) % len(keys_list)
+                                        if ce.key == pygame.K_DOWN: ctrl_sel = (ctrl_sel + 1) % len(keys_list)
+                                        if ce.key == pygame.K_RETURN: waiting = True
+                                        if ce.key == pygame.K_ESCAPE: editing = False
+                            clock.tick(60)
+                        continue # Vuelve al menú principal
                     else:
+
                         g = Game(selected_mode_key)
 
                     # --- BUCLE DE JUEGO ---
@@ -505,11 +599,15 @@ def main_menu():
                                     is_paused = True
                             
                             if game_event.type == pygame.KEYDOWN:
-                                if game_event.key == pygame.K_ESCAPE: is_paused = not is_paused
+                                if game_event.key == pygame.K_F11:
+                                    win = toggle_fullscreen(win)
+                                if game_event.key == config.KEY_MAP["PAUSE"]: is_paused = not is_paused
+
                                 if not is_paused:
-                                    if game_event.key == pygame.K_UP: g.rotate_piece()
-                                    elif game_event.key == pygame.K_SPACE: g.hard_drop()
-                                    elif game_event.key == pygame.K_c or game_event.key == pygame.K_LSHIFT: g.handle_hold()
+                                    if game_event.key == config.KEY_MAP["ROTATE"]: g.rotate_piece()
+                                    elif game_event.key == config.KEY_MAP["DROP"]: g.hard_drop()
+                                    elif game_event.key == config.KEY_MAP["HOLD"]: g.handle_hold()
+
                                 else:
                                     # Navegación Menú Pausa
                                     if game_event.key == pygame.K_UP: pause_idx = (pause_idx - 1) % 3
@@ -529,6 +627,12 @@ def main_menu():
                         if is_paused: renderer.draw_pause_menu(win, pause_idx)
                         renderer.draw_audio_control(win, volume, muted)
                         pygame.display.update(); clock.tick(60)
+
+                        # --- MANEJO DE RESIZE EN JUEGO ---
+                        for resize_event in pygame.event.get(pygame.VIDEORESIZE):
+                            config.update_resolution(resize_event.w, resize_event.h)
+                            win = pygame.display.set_mode((resize_event.w, resize_event.h), pygame.RESIZABLE | (pygame.FULLSCREEN if is_fullscreen else 0))
+
 
                     # --- FIN DE PARTIDA / GAME OVER ---
                     renderer.draw_game_over(win, g.score)

@@ -9,17 +9,40 @@ import os
 # --- DIMENSIONES DE LA PANTALLA Y EL JUEGO ---
 SCREEN_WIDTH = 950
 SCREEN_HEIGHT = 850
-BLOCK_SIZE = 30      # Tamaño en píxeles de cada bloque cuadrado
+BASE_BLOCK_SIZE = 30 # Tamaño base para escalado
+BLOCK_SIZE = 30      # Tamaño actual (escalado)
 GRID_WIDTH = 10      # Ancho del tablero en bloques
 GRID_HEIGHT = 20     # Alto del tablero en bloques
+SCALE = 1.0          # Factor de escala dinámico
+
 
 # Dimensiones del área de juego
 PLAY_WIDTH = GRID_WIDTH * BLOCK_SIZE
 PLAY_HEIGHT = GRID_HEIGHT * BLOCK_SIZE
 
-# Posicionamiento del tablero en la pantalla
+# Variables de posición dinámicas (se actualizarán con update_resolution)
 TOP_LEFT_X = (SCREEN_WIDTH - PLAY_WIDTH) // 2 - 50
 TOP_LEFT_Y = 160
+
+def update_resolution(w, h):
+    """Actualiza las variables globales de resolución y recalcula el centrado y escalado."""
+    global SCREEN_WIDTH, SCREEN_HEIGHT, TOP_LEFT_X, TOP_LEFT_Y, BLOCK_SIZE, SCALE, PLAY_WIDTH, PLAY_HEIGHT
+    SCREEN_WIDTH = w
+    SCREEN_HEIGHT = h
+    
+    # Calcular escala basada en la altura (mínimo 600px para evitar roturas)
+    SCALE = max(0.7, h / 850.0)
+    BLOCK_SIZE = int(BASE_BLOCK_SIZE * SCALE)
+    
+    # Recalcular dimensiones del área de juego
+    PLAY_WIDTH = GRID_WIDTH * BLOCK_SIZE
+    PLAY_HEIGHT = GRID_HEIGHT * BLOCK_SIZE
+    
+    # Recalcular posición del tablero para que siempre esté centrado
+    TOP_LEFT_X = (SCREEN_WIDTH - PLAY_WIDTH) // 2 - int(50 * SCALE)
+    TOP_LEFT_Y = int(160 * SCALE)
+
+
 
 # Archivo de persistencia para mejores puntuaciones
 SCORE_FILE = "highscores.json"
@@ -159,7 +182,46 @@ SHAPE_T = [
     [".....", "..0..", ".00..", "..0..", "....."],
 ]
 
+# --- CONFIGURACIÓN DE CONTROLES (Mapeo de Teclas) ---
+KEY_MAP = {
+    "LEFT": pygame.K_LEFT,
+    "RIGHT": pygame.K_RIGHT,
+    "DOWN": pygame.K_DOWN,
+    "ROTATE": pygame.K_UP,
+    "DROP": pygame.K_SPACE,
+    "HOLD": pygame.K_c,
+    "PAUSE": pygame.K_ESCAPE,
+    "FULLSCREEN": pygame.K_F11
+}
+
+def save_controls():
+    """Guarda el mapeo de teclas actual en un archivo JSON."""
+    try:
+        with open("controls.json", "w") as f:
+            json.dump(KEY_MAP, f)
+    except Exception as e:
+        print(f"Error saving controls: {e}")
+
+def load_controls():
+    """Carga el mapeo de teclas desde el archivo JSON si existe."""
+    global KEY_MAP
+    if os.path.exists("controls.json"):
+        try:
+            with open("controls.json", "r") as f:
+                loaded = json.load(f)
+                # Asegurar que los valores sean enteros (constantes de pygame)
+                for k, v in loaded.items():
+                    if k in KEY_MAP:
+                        KEY_MAP[k] = int(v)
+        except Exception as e:
+            print(f"Error loading controls: {e}")
+
+# Cargar controles al iniciar
+import pygame 
+load_controls()
+
 # --- SISTEMA DE TRADUCCIÓN (i18n) ---
+
 LANGS = ["ESPAÑOL", "ENGLISH", "DEUTSCH"]
 current_lang = 0
 
@@ -173,7 +235,10 @@ TRANSLATIONS = {
         "NEW_RECORD": "¡NUEVO RÉCORD!", "ENTER_NAME": "INTRODUCE TU NOMBRE:", "PLAYER": "JUGADOR",
         "SELECT_OPT": "SELECCIONA OPCIÓN", "PRESS_START": "ENTER PARA EMPEZAR", "EXIT": "SALIR DEL JUEGO",
         "SELECT_SAVE": "SELECCIONA SLOT PARA GUARDAR", "THEME": "TEMA", "LANGUAGE": "IDIOMA",
-        "CLASSIC": "CLÁSICO", "JOKER": "COMODÍN", "RANDOM": "ALEATORIO", "ZEN": "RELAX"
+        "CLASSIC": "CLÁSICO", "JOKER": "COMODÍN", "RANDOM": "ALEATORIO", "ZEN": "RELAX",
+        "CONTROLS": "CONTROLES", "PRESS_KEY": "PRESIONA UNA TECLA...", "KEY_LEFT": "IZQUIERDA",
+        "KEY_RIGHT": "DERECHA", "KEY_DOWN": "BAJAR", "KEY_ROTATE": "ROTAR",
+        "KEY_DROP": "CAÍDA RÁPIDA", "KEY_HOLD": "GUARDAR", "KEY_PAUSE": "PAUSA"
     },
     "ENGLISH": {
         "HOLD": "HOLD", "NEXT": "NEXT", "SCORE": "SCORE", "LINES": "LINES",
@@ -184,7 +249,10 @@ TRANSLATIONS = {
         "NEW_RECORD": "NEW RECORD!", "ENTER_NAME": "ENTER YOUR NAME:", "PLAYER": "PLAYER",
         "SELECT_OPT": "SELECT OPTION", "PRESS_START": "ENTER TO START", "EXIT": "EXIT GAME",
         "SELECT_SAVE": "SELECT SLOT TO SAVE", "THEME": "THEME", "LANGUAGE": "LANGUAGE",
-        "CLASSIC": "CLASSIC", "JOKER": "JOKER", "RANDOM": "RANDOM", "ZEN": "ZEN"
+        "CLASSIC": "CLASSIC", "JOKER": "JOKER", "RANDOM": "RANDOM", "ZEN": "ZEN",
+        "CONTROLS": "CONTROLES", "PRESS_KEY": "PRESS A KEY...", "KEY_LEFT": "LEFT",
+        "KEY_RIGHT": "RIGHT", "KEY_DOWN": "DOWN", "KEY_ROTATE": "ROTATE",
+        "KEY_DROP": "HARD DROP", "KEY_HOLD": "HOLD", "KEY_PAUSE": "PAUSE"
     },
     "DEUTSCH": {
         "HOLD": "GEHALTEN", "NEXT": "NÄCHSTE", "SCORE": "PUNKTE", "LINES": "REIHEN",
@@ -195,9 +263,13 @@ TRANSLATIONS = {
         "NEW_RECORD": "NEUER REKORD!", "ENTER_NAME": "NAME EINGEBEN:", "PLAYER": "SPIELER",
         "SELECT_OPT": "OPTION WÄHLEN", "PRESS_START": "ENTER ZUM STARTEN", "EXIT": "BEENDEN",
         "SELECT_SAVE": "SPEICHERPLATZ WÄHLEN", "THEME": "THEMA", "LANGUAGE": "SPRACHE",
-        "CLASSIC": "KLASSIK", "JOKER": "JOKER", "RANDOM": "ZUFALL", "ZEN": "ZEN"
+        "CLASSIC": "KLASSIK", "JOKER": "JOKER", "RANDOM": "ZUFALL", "ZEN": "ZEN",
+        "CONTROLS": "STEUERUNG", "PRESS_KEY": "TASTE DRÜCKEN...", "KEY_LEFT": "LINKS",
+        "KEY_RIGHT": "RECHTS", "KEY_DOWN": "RUNTER", "KEY_ROTATE": "DREHEN",
+        "KEY_DROP": "SCHNELLER FALL", "KEY_HOLD": "HALTEN", "KEY_PAUSE": "PAUSE"
     }
 }
+
 
 def _(key):
     """Función de traducción rápida."""

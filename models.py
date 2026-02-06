@@ -67,7 +67,8 @@ class Particle:
             self.lifetime = 255
             self.gravity = 0.08
 
-        self.size = random.randint(2, 4)
+        self.size = random.randint(int(2 * config.SCALE), int(4 * config.SCALE))
+
 
     def update(self):
         """Actualiza posición y vida de la partícula."""
@@ -96,8 +97,9 @@ class Star:
     def reset(self):
         self.x = random.randint(0, config.SCREEN_WIDTH)
         self.y = random.randint(0, config.SCREEN_HEIGHT)
-        self.speed = random.uniform(1, 4)
-        self.size = random.randint(1, 3)
+        self.speed = random.uniform(1, 4) * config.SCALE
+        self.size = random.randint(max(1, int(1 * config.SCALE)), max(1, int(3 * config.SCALE)))
+
         # Colores clásicos de Galaga: Cyan, Rojo, Amarillo, Blanco
         self.color = random.choice([(200, 200, 255), (255, 100, 100), (255, 255, 150), (255, 255, 255)])
         self.brightness = random.randint(100, 255)
@@ -138,24 +140,27 @@ class MeshBackground:
         self.time += 0.05
         accent_blue = config.active_theme["mesh"]
         
-        # Líneas horizontales con perspectiva
+        # Líneas horizontales con perspectiva (Escaladas)
+        startY = int(250 * config.SCALE)
         for i in range(0, 15):
-            offset = (self.time * 20) % 60
-            y = 250 + i * 40 + offset
+            offset = (self.time * 20 * config.SCALE) % (60 * config.SCALE)
+            y = startY + i * int(40 * config.SCALE) + offset
             if y > config.SCREEN_HEIGHT: continue
-            alpha = max(0, min(255, (y - 250) * 1.5))
+            alpha = max(0, min(255, (y - startY) * 1.5))
             r, g, b = accent_blue
             color = (int(r * (alpha / 255)), int(g * (alpha / 255)), int(b * (alpha / 255)))
-            pygame.draw.line(surface, color, (0, y), (config.SCREEN_WIDTH, y), 1)
+            pygame.draw.line(surface, color, (0, int(y)), (config.SCREEN_WIDTH, int(y)), max(1, int(1 * config.SCALE)))
 
-        # Líneas verticales
+
+        # Líneas verticales (Escaladas)
         for i in range(-10, 20):
             start_x = config.SCREEN_WIDTH // 2
-            start_y = 200
-            end_x = i * 100 + (config.SCREEN_WIDTH // 2 - 500)
+            start_y = int(200 * config.SCALE)
+            end_x = i * int(100 * config.SCALE) + (config.SCREEN_WIDTH // 2 - int(500 * config.SCALE))
             end_y = config.SCREEN_HEIGHT
-            end_x += math.sin(self.time * 0.5) * 20
-            pygame.draw.line(surface, accent_blue, (start_x, start_y), (end_x, end_y), 1)
+            end_x += math.sin(self.time * 0.5) * 20 * config.SCALE
+            pygame.draw.line(surface, accent_blue, (start_x, start_y), (int(end_x), int(end_y)), max(1, int(1 * config.SCALE)))
+
 class Lightning:
     """Efecto visual de rayo/trueno generativo."""
     def __init__(self, x_start):
@@ -182,8 +187,9 @@ class Lightning:
             # Color del rayo: blanco con núcleo cian
             color = (200, 255, 255)
             # Dibujar con un poco de grosor aleatorio para parpadeo
-            width = random.randint(2, 6)
+            width = max(1, int(random.randint(2, 6) * config.SCALE))
             if len(self.points) > 1:
                 pygame.draw.lines(surface, color, False, self.points, width)
                 # Resplandor exterior
-                pygame.draw.lines(surface, (0, 150, 255, self.alpha // 2), False, self.points, width + 4)
+                pygame.draw.lines(surface, (0, 150, 255, self.alpha // 2), False, self.points, width + max(1, int(4 * config.SCALE)))
+
