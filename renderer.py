@@ -220,14 +220,17 @@ def draw_hud(surface, score, lines, level, combo, next_pieces, hold_piece, shake
     draw_hold_piece(surface, hold_piece, shake)
     
     # Dibujar Estadísticas
-    stats_x = config.TOP_LEFT_X + config.PLAY_WIDTH + 50
-    panel_y = config.TOP_LEFT_Y + 270
+    stats_x = config.TOP_LEFT_X + config.PLAY_WIDTH + int(50 * config.SCALE)
+    panel_y = config.TOP_LEFT_Y + int(270 * config.SCALE)
+    w, h = int(200 * config.SCALE), int(240 * config.SCALE)
     
-    pygame.draw.rect(surface, (10, 10, 30), (stats_x, panel_y, 200, 240), 0, border_radius=15)
-    pygame.draw.rect(surface, config.active_theme["glow1"], (stats_x, panel_y, 200, 240), 2, border_radius=15)
+    pygame.draw.rect(surface, (10, 10, 30), (stats_x, panel_y, w, h), 0, border_radius=int(15 * config.SCALE))
+    pygame.draw.rect(surface, config.active_theme["glow1"], (stats_x, panel_y, w, h), max(1, int(2 * config.SCALE)), border_radius=int(15 * config.SCALE))
+
     
-    label_font = pygame.font.SysFont("consolas", 20, bold=True)
-    val_font = pygame.font.SysFont("consolas", 30, bold=True)
+    label_font = pygame.font.SysFont("consolas", int(20 * config.SCALE), bold=True)
+    val_font = pygame.font.SysFont("consolas", int(30 * config.SCALE), bold=True)
+
     
     surface.blit(label_font.render(config._("SCORE"), 1, WHITE), (stats_x + 20, panel_y + 15))
     surface.blit(val_font.render(str(score), 1, config.active_theme["glow1"]), (stats_x + 20, panel_y + 35))
@@ -242,29 +245,32 @@ def draw_hud(surface, score, lines, level, combo, next_pieces, hold_piece, shake
         # Efecto de parpadeo arcade para combos
         ticks = pygame.time.get_ticks()
         combo_color = (255, 100, 100) if (ticks // 150) % 2 == 0 else (255, 255, 255)
-        surface.blit(label_font.render(f"COMBO X{combo}!", 1, combo_color), (stats_x + 20, panel_y + 200))
+        surface.blit(label_font.render(f"COMBO X{combo}!", 1, combo_color), (stats_x + int(20 * config.SCALE), panel_y + int(200 * config.SCALE)))
+
 
 def draw_high_scores(surface, scores, y_offset=650):
     """Dibuja la tabla de récords en el menú principal con estética arcade."""
-    # Caja para los récords
-    box_rect = (config.SCREEN_WIDTH // 2 - 190, y_offset, 380, 160)
+    # Caja para los récords (Escalada)
+    w, h = int(380 * config.SCALE), int(160 * config.SCALE)
+    box_rect = (config.SCREEN_WIDTH // 2 - w // 2, y_offset, w, h)
     pygame.draw.rect(surface, (0, 0, 20), box_rect)
-    pygame.draw.rect(surface, (255, 0, 0), box_rect, 2)
+    pygame.draw.rect(surface, (255, 0, 0), box_rect, max(1, int(2 * config.SCALE)))
     
-    label_font = pygame.font.SysFont("consolas", 18, bold=True)
-    score_font = pygame.font.SysFont("consolas", 16)
+    label_font = pygame.font.SysFont("consolas", int(18 * config.SCALE), bold=True)
+    score_font = pygame.font.SysFont("consolas", int(16 * config.SCALE))
     
     header = label_font.render(config._("TOP_HEROES"), 1, (255, 255, 0))
-    surface.blit(header, (config.SCREEN_WIDTH // 2 - header.get_width() // 2, y_offset + 10))
+    surface.blit(header, (config.SCREEN_WIDTH // 2 - header.get_width() // 2, y_offset + int(10 * config.SCALE)))
     
     # Mostrar solo los 5 mejores para que quepa en el diseño Galaga
     for i, entry in enumerate(scores[:5]):
         name_text = score_font.render(f"{i+1}. {entry['name'][:10]}", 1, (255, 255, 255))
         score_val = score_font.render(str(entry["score"]), 1, (0, 255, 255))
         
-        y_y = y_offset + 40 + i * 22
-        surface.blit(name_text, (config.SCREEN_WIDTH // 2 - 160, y_y))
-        surface.blit(score_val, (config.SCREEN_WIDTH // 2 + 60, y_y))
+        y_y = y_offset + int(40 * config.SCALE) + i * int(22 * config.SCALE)
+        surface.blit(name_text, (config.SCREEN_WIDTH // 2 - int(160 * config.SCALE), y_y))
+        surface.blit(score_val, (config.SCREEN_WIDTH // 2 + int(60 * config.SCALE), y_y))
+
 
 def draw_settings_button(surface):
     """Dibuja un botón de engrane en la parte inferior derecha."""

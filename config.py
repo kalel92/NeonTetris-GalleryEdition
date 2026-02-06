@@ -3,8 +3,10 @@ Configuración global para Neon Tetris PRO.
 Contiene dimensiones, temas visuales, colores base y las definiciones de las piezas.
 """
 
-import json
 import os
+import json
+import pygame
+
 
 # --- DIMENSIONES DE LA PANTALLA Y EL JUEGO ---
 SCREEN_WIDTH = 950
@@ -217,8 +219,8 @@ def load_controls():
             print(f"Error loading controls: {e}")
 
 # Cargar controles al iniciar
-import pygame 
 load_controls()
+
 
 # --- SISTEMA DE TRADUCCIÓN (i18n) ---
 

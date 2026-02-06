@@ -420,7 +420,8 @@ def main_menu():
         ticks = pygame.time.get_ticks()
         title_color = (255, 255, 255) if (ticks // 500) % 2 == 0 else (255, 200, 0)
         renderer.draw_text_centered(win, "NEON TETRIS", 100, int(40 * config.SCALE), title_color, "arialblack", glow=True)
-        renderer.draw_text_centered(win, "GALLERY EDITION", 22, int(145 * config.SCALE), (255, 50, 50), "consolas")
+        renderer.draw_text_centered(win, "GALLERY EDITION", 22, int(130 * config.SCALE), (255, 50, 50), "consolas")
+
         audio_rect = renderer.draw_audio_control(win, volume, muted)
         
         # Naves decorativas Galaga (Posiciones ajustadas dinámicamente)
@@ -437,13 +438,15 @@ def main_menu():
         renderer.draw_block(win, c2x + int(30 * config.SCALE), int(90 * config.SCALE), (0, 255, 255))
 
 
-        # Selectores de Tema e Idioma (Más abajo para no chocar con el subtítulo)
-        lang_rect = renderer.draw_text_centered(win, f"< {config._('LANGUAGE')}: {config.LANGS[config.current_lang]} >", 20, int(190 * config.SCALE), (255, 255, 0))
-        theme_rect = renderer.draw_text_centered(win, f"< {config._('THEME')}: {theme_keys[theme_idx]} >", 20, int(215 * config.SCALE), (0, 255, 255))
+        # Selectores de Tema e Idioma (Más espaciados)
+        lang_rect = renderer.draw_text_centered(win, f"< {config._('LANGUAGE')}: {config.LANGS[config.current_lang]} >", 20, int(185 * config.SCALE), (255, 255, 0))
+        theme_rect = renderer.draw_text_centered(win, f"< {config._('THEME')}: {theme_keys[theme_idx]} >", 20, int(210 * config.SCALE), (0, 255, 255))
+
         
-        # Caja de Opciones (Más grande y centrada)
-        pygame.draw.rect(win, (255, 255, 255), (config.SCREEN_WIDTH//2 - int(180 * config.SCALE), int(250 * config.SCALE), int(360 * config.SCALE), int(360 * config.SCALE)), 2, border_radius=int(5 * config.SCALE))
-        renderer.draw_text_centered(win, config._("SELECT_OPT"), 20, int(270 * config.SCALE), (255, 255, 0))
+        # Caja de Opciones (Más alta para que quepan todos los modos)
+        box_h = int(410 * config.SCALE)
+        pygame.draw.rect(win, (255, 255, 255), (config.SCREEN_WIDTH//2 - int(180 * config.SCALE), int(265 * config.SCALE), int(360 * config.SCALE), box_h), 2, border_radius=int(5 * config.SCALE))
+        renderer.draw_text_centered(win, config._("SELECT_OPT"), 20, int(285 * config.SCALE), (255, 255, 0))
         
         option_rects = []
         for i, m_key in enumerate(modes_keys):
@@ -452,14 +455,17 @@ def main_menu():
             suffix = " < " if i == cur_idx else "   "
             if i == cur_idx and (ticks // 200) % 2 == 0: color = (255, 50, 50)
             opt_text = config._(m_key)
-            # Mayor espaciado vertical
-            r = renderer.draw_text_centered(win, f"{prefix}{opt_text}{suffix}", 32, int((315 + i*48) * config.SCALE), color)
+            # Posicionamiento re-ajustado dentro de la caja
+            r = renderer.draw_text_centered(win, f"{prefix}{opt_text}{suffix}", 32, int((330 + i*48) * config.SCALE), color)
             option_rects.append(r)
 
 
+
         
-        if (ticks // 800) % 2 == 0: renderer.draw_text_centered(win, config._("PRESS_START"), 25, int(625 * config.SCALE), (0, 255, 0))
-        renderer.draw_high_scores(win, logic.load_scores(), y_offset=int(670 * config.SCALE))
+        if (ticks // 800) % 2 == 0: renderer.draw_text_centered(win, config._("PRESS_START"), 25, int(700 * config.SCALE), (0, 255, 0))
+        renderer.draw_high_scores(win, logic.load_scores(), y_offset=int(740 * config.SCALE))
+
+
 
         renderer.draw_text_centered(win, "CREDIT  01", 18, config.SCREEN_HEIGHT - 40, (255, 255, 255))
         renderer.draw_text_centered(win, "© 2026 ANTIGRAVITY ARCADE", 14, config.SCREEN_HEIGHT - 20, (120, 120, 120))
